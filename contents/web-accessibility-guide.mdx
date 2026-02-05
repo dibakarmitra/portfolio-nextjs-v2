@@ -1,0 +1,250 @@
+---
+title: 'Web Accessibility Guide: Building Inclusive Applications'
+date: '2024-01-20'
+excerpt: 'Learn how to create accessible web applications that work for everyone, following WCAG guidelines and best practices.'
+tags: ['Accessibility', 'WCAG', 'Web Development', 'UX']
+---
+
+# Web Accessibility Guide: Building Inclusive Applications
+
+Creating accessible web applications is not just a legal requirement but a moral imperative. Let's explore how to make our applications work for everyone.
+
+## Semantic HTML
+
+```html
+<!-- Bad -->
+<div class="button" onclick="submit()">Submit Form</div>
+
+<!-- Good -->
+<button type="submit" aria-label="Submit form">Submit Form</button>
+
+<!-- Bad -->
+<div class="header">
+    <div class="nav">...</div>
+</div>
+
+<!-- Good -->
+<header>
+    <nav aria-label="Main navigation">...</nav>
+</header>
+```
+
+## ARIA Attributes
+
+```jsx
+// React component with ARIA attributes
+function Accordion({ items }) {
+    const [activeIndex, setActiveIndex] = useState(null);
+
+    return (
+        <div role="region" aria-label="FAQ Accordion">
+            {items.map((item, index) => (
+                <div key={index}>
+                    <button
+                        aria-expanded={activeIndex === index}
+                        aria-controls={`content-${index}`}
+                        onClick={() => setActiveIndex(index)}
+                    >
+                        {item.title}
+                    </button>
+                    <div id={`content-${index}`} role="region" aria-hidden={activeIndex !== index}>
+                        {item.content}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+```
+
+## Focus Management
+
+```typescript
+function Modal({ isOpen, onClose, children }) {
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      // Store the element that had focus before opening modal
+      const previousFocus = document.activeElement;
+
+      // Focus the modal
+      modalRef.current?.focus();
+
+      // Restore focus when modal closes
+      return () => {
+        (previousFocus as HTMLElement)?.focus();
+      };
+    }
+  }, [isOpen]);
+
+  return isOpen ? (
+    <div
+      ref={modalRef}
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      aria-labelledby="modal-title"
+    >
+      <h2 id="modal-title">Modal Title</h2>
+      {children}
+      <button onClick={onClose}>Close</button>
+    </div>
+  ) : null;
+}
+```
+
+## Skip Links
+
+```tsx
+function SkipLink() {
+    return (
+        <a
+            href="#main-content"
+            className="skip-link"
+            style={{
+                position: 'absolute',
+                top: -40,
+                left: 0,
+                padding: 8,
+                zIndex: 100,
+                ':focus': {
+                    top: 0,
+                },
+            }}
+        >
+            Skip to main content
+        </a>
+    );
+}
+```
+
+## Color Contrast
+
+```typescript
+function isColorContrastValid(foreground: string, background: string): boolean {
+    const luminance = (r: number, g: number, b: number) => {
+        const [rs, gs, bs] = [r, g, b].map((c) => {
+            c = c / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    };
+
+    const hex2rgb = (hex: string) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result
+            ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)]
+            : null;
+    };
+
+    const fg = hex2rgb(foreground);
+    const bg = hex2rgb(background);
+
+    if (!fg || !bg) return false;
+
+    const l1 = luminance(fg[0], fg[1], fg[2]);
+    const l2 = luminance(bg[0], bg[1], bg[2]);
+
+    const ratio = (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    return ratio >= 4.5; // WCAG AA standard for normal text
+}
+```
+
+## Keyboard Navigation
+
+```tsx
+function KeyboardNavList({ items }) {
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        switch (event.key) {
+            case 'ArrowDown':
+                event.preventDefault();
+                setSelectedIndex((i) => Math.min(i + 1, items.length - 1));
+                break;
+            case 'ArrowUp':
+                event.preventDefault();
+                setSelectedIndex((i) => Math.max(i - 1, 0));
+                break;
+        }
+    };
+
+    return (
+        <ul role="listbox" onKeyDown={handleKeyDown}>
+            {items.map((item, index) => (
+                <li
+                    key={index}
+                    role="option"
+                    aria-selected={index === selectedIndex}
+                    tabIndex={index === selectedIndex ? 0 : -1}
+                >
+                    {item.label}
+                </li>
+            ))}
+        </ul>
+    );
+}
+```
+
+## Form Accessibility
+
+```tsx
+function AccessibleForm() {
+    return (
+        <form aria-labelledby="form-title">
+            <h2 id="form-title">Contact Us</h2>
+
+            <div>
+                <label htmlFor="name">
+                    Name
+                    <span aria-hidden="true">*</span>
+                    <span className="sr-only">required</span>
+                </label>
+                <input
+                    id="name"
+                    type="text"
+                    required
+                    aria-required="true"
+                    aria-describedby="name-error"
+                />
+                <div id="name-error" role="alert"></div>
+            </div>
+
+            <div>
+                <label htmlFor="email">Email</label>
+                <input id="email" type="email" aria-describedby="email-hint" />
+                <div id="email-hint" className="hint">
+                    We'll never share your email
+                </div>
+            </div>
+        </form>
+    );
+}
+```
+
+## Best Practices
+
+1. Semantic HTML
+    - Use proper heading hierarchy
+    - Use semantic elements
+    - Provide alternative text for images
+
+2. Keyboard Navigation
+    - Ensure all interactive elements are focusable
+    - Implement logical tab order
+    - Provide visible focus indicators
+
+3. ARIA Implementation
+    - Use ARIA labels when needed
+    - Implement proper roles
+    - Manage dynamic content updates
+
+4. Testing
+    - Use screen readers
+    - Keyboard navigation testing
+    - Automated accessibility testing
+
+## Conclusion
+
+Accessibility should be considered from the start of development, not as an afterthought. Following these practices ensures your application is usable by everyone.

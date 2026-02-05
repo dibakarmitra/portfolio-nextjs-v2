@@ -1,0 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    color-scheme: light dark;
+}
+
+/* Custom scrollbar for admin panel */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #a1a1aa;
+    border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+    background: #27272a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #71717a;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #3f3f46;
+}
+
+body {
+    @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors duration-200;
+}
+
+/* Landing Page Styles */
+:root {
+    --bg-pattern-dot: #e4e4e7;
+}
+
+.dark {
+    --bg-pattern-dot: #333;
+}
+
+.bg-grid-pattern {
+    background-size: 40px 40px;
+    background-image: radial-gradient(circle, var(--bg-pattern-dot) 1px, transparent 1px);
+    mask-image: linear-gradient(to bottom, transparent, 10%, black, 90%, transparent);
+    -webkit-mask-image: linear-gradient(to bottom, transparent, 5%, black, 95%, transparent);
+}
+
+html {
+    scroll-behavior: smooth;
+}

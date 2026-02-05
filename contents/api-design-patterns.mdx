@@ -1,0 +1,331 @@
+---
+title: 'API Design Patterns and Best Practices'
+date: '2024-01-10'
+excerpt: 'Learn how to design clean, maintainable, and developer-friendly APIs using modern best practices and patterns.'
+tags: ['API Design', 'REST', 'GraphQL', 'Web Development']
+---
+
+# API Design Patterns and Best Practices
+
+Designing good APIs is crucial for building maintainable and scalable applications. Let's explore best practices and patterns.
+
+## RESTful API Design
+
+### Resource Modeling
+
+```typescript
+// User Resource
+interface User {
+    id: string;
+    name: string;
+    email: string;
+    role: UserRole;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// API Endpoints
+class UserController {
+    // GET /users
+    async listUsers(
+        page: number = 1,
+        limit: number = 10,
+        sort?: string
+    ): Promise<PaginatedResponse<User>> {
+        // Implementation
+    }
+
+    // GET /users/:id
+    async getUser(id: string): Promise<User> {
+        // Implementation
+    }
+
+    // POST /users
+    async createUser(data: CreateUserDTO): Promise<User> {
+        // Implementation
+    }
+
+    // PATCH /users/:id
+    async updateUser(id: string, data: UpdateUserDTO): Promise<User> {
+        // Implementation
+    }
+
+    // DELETE /users/:id
+    async deleteUser(id: string): Promise<void> {
+        // Implementation
+    }
+}
+```
+
+## Response Handling
+
+```typescript
+interface ApiResponse<T> {
+    data: T;
+    meta?: {
+        page?: number;
+        limit?: number;
+        total?: number;
+    };
+    links?: {
+        self: string;
+        next?: string;
+        prev?: string;
+    };
+}
+
+interface ApiError {
+    code: string;
+    message: string;
+    details?: Record<string, any>;
+}
+
+// Example Response Handler
+class ResponseHandler {
+    static success<T>(data: T, meta?: any): ApiResponse<T> {
+        return {
+            data,
+            meta,
+            links: {
+                self: getCurrentUrl(),
+            },
+        };
+    }
+
+    static error(error: Error): ApiError {
+        return {
+            code: error.name,
+            message: error.message,
+            details: error instanceof ApiError ? error.details : undefined,
+        };
+    }
+}
+```
+
+## Validation
+
+```typescript
+import { z } from 'zod';
+
+// Request Validation Schema
+const CreateUserSchema = z.object({
+    name: z.string().min(2).max(100),
+    email: z.string().email(),
+    password: z.string().min(8).regex(/[A-Z]/).regex(/[0-9]/),
+    role: z.enum(['user', 'admin']),
+});
+
+// Middleware
+function validateRequest(schema: z.Schema) {
+    return async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            req.body = await schema.parseAsync(req.body);
+            next();
+        } catch (error) {
+            if (error instanceof z.ZodError) {
+                res.status(400).json({
+                    code: 'VALIDATION_ERROR',
+                    message: 'Invalid request data',
+                    details: error.errors,
+                });
+            } else {
+                next(error);
+            }
+        }
+    };
+}
+```
+
+## Rate Limiting
+
+```typescript
+import rateLimit from 'express-rate-limit';
+import Redis from 'ioredis';
+
+class RateLimiter {
+    private redis: Redis;
+    private prefix: string;
+
+    constructor(redisUrl: string, prefix: string = 'ratelimit:') {
+        this.redis = new Redis(redisUrl);
+        this.prefix = prefix;
+    }
+
+    createLimiter(options: {
+        windowMs: number;
+        max: number;
+        keyGenerator?: (req: Request) => string;
+    }) {
+        return rateLimit({
+            store: {
+                increment: async (key: string) => {
+                    const redisKey = this.prefix + key;
+                    const multi = this.redis.multi();
+
+                    multi.incr(redisKey);
+                    multi.pexpire(redisKey, options.windowMs);
+
+                    const [count] = await multi.exec();
+                    return count?.[1] as number;
+                },
+                decrement: async (key: string) => {
+                    await this.redis.decr(this.prefix + key);
+                },
+                resetKey: async (key: string) => {
+                    await this.redis.del(this.prefix + key);
+                },
+            },
+            ...options,
+        });
+    }
+}
+```
+
+## Versioning
+
+```typescript
+// Version through URL
+// /api/v1/users
+
+// Version through Accept header
+app.use((req, res, next) => {
+    const accept = req.get('Accept');
+    if (accept?.includes('version=1')) {
+        req.apiVersion = 1;
+    } else if (accept?.includes('version=2')) {
+        req.apiVersion = 2;
+    } else {
+        req.apiVersion = 1; // default version
+    }
+    next();
+});
+
+// Version-specific controllers
+class UserControllerV1 {
+    // V1 implementations
+}
+
+class UserControllerV2 extends UserControllerV1 {
+    // V2 implementations with changes
+    async listUsers(page: number = 1, limit: number = 10): Promise<User[]> {
+        // New implementation
+        return super.listUsers(page, limit);
+    }
+}
+```
+
+## Documentation
+
+```typescript
+/**
+ * @api {post} /users Create User
+ * @apiVersion 1.0.0
+ * @apiName CreateUser
+ * @apiGroup Users
+ *
+ * @apiParam {String} name User's full name
+ * @apiParam {String} email User's email
+ * @apiParam {String} password User's password
+ * @apiParam {String="user","admin"} role User's role
+ *
+ * @apiSuccess {String} id User's unique ID
+ * @apiSuccess {String} name User's name
+ * @apiSuccess {String} email User's email
+ * @apiSuccess {String} role User's role
+ * @apiSuccess {Date} createdAt Creation timestamp
+ *
+ * @apiError {String} code Error code
+ * @apiError {String} message Error message
+ * @apiError {Object} details Validation details
+ */
+async createUser(req: Request, res: Response) {
+  // Implementation
+}
+```
+
+## GraphQL API Design
+
+```typescript
+import { gql } from 'apollo-server';
+
+const typeDefs = gql`
+    type User {
+        id: ID!
+        name: String!
+        email: String!
+        posts: [Post!]!
+        profile: Profile
+    }
+
+    type Post {
+        id: ID!
+        title: String!
+        content: String!
+        author: User!
+        comments: [Comment!]!
+    }
+
+    input CreateUserInput {
+        name: String!
+        email: String!
+        password: String!
+    }
+
+    type Mutation {
+        createUser(input: CreateUserInput!): User!
+        updateUser(id: ID!, input: UpdateUserInput!): User!
+        deleteUser(id: ID!): Boolean!
+    }
+
+    type Query {
+        users(page: Int = 1, limit: Int = 10, sort: String): UserConnection!
+        user(id: ID!): User
+    }
+`;
+
+const resolvers = {
+    Query: {
+        users: async (_, { page, limit, sort }, context) => {
+            // Implementation with pagination
+        },
+        user: async (_, { id }, context) => {
+            // Implementation
+        },
+    },
+    Mutation: {
+        createUser: async (_, { input }, context) => {
+            // Implementation
+        },
+    },
+};
+```
+
+## Best Practices
+
+1. Resource Design
+    - Use nouns for resources
+    - Keep URLs consistent
+    - Use proper HTTP methods
+    - Implement HATEOAS
+
+2. Security
+    - Use HTTPS
+    - Implement authentication
+    - Rate limiting
+    - Input validation
+
+3. Performance
+    - Implement caching
+    - Use pagination
+    - Support filtering
+    - Enable compression
+
+4. Documentation
+    - OpenAPI/Swagger
+    - Clear examples
+    - Error documentation
+    - Version documentation
+
+## Conclusion
+
+Good API design focuses on developer experience, maintainability, and scalability. Following these patterns and practices helps create robust and user-friendly APIs.

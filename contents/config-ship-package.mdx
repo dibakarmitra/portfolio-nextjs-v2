@@ -1,0 +1,202 @@
+---
+title: 'Config-Ship: Lightweight Configuration Resolver for Node.js'
+published: true
+date: '2025-12-18'
+description: 'A lightweight, package-safe configuration resolver with layered defaults, env, and runtime overrides.'
+image: 'https://via.placeholder.com/1200x630.png/007bff/ffffff?text=Config-Ship'
+tags:
+    - javaScript
+    - configuration
+    - node.js
+    - typescript
+    - esm
+    - config
+---
+
+# Config-Ship: Simple and Safe Configuration Management
+
+Config-Ship is a lightweight npm package designed for Node.js applications that need a simple yet powerful way to manage configurations with support for layered defaults, environment variables, and runtime overrides.
+
+## Key Features
+
+- **Layered Configuration**: Combine defaults, environment variables, and runtime overrides
+- **Package-Safe**: Designed to work well in both ESM and CommonJS modules
+- **Minimal Dependencies**: Lightweight with minimal external dependencies
+- **TypeScript Support**: Built with TypeScript for better developer experience
+- **Runtime Access**: Get and set configuration values at runtime
+
+## Installation
+
+Install Config-Ship using your preferred package manager:
+
+```bash
+# Using npm
+npm install config-ship
+
+# Using yarn
+yarn add config-ship
+
+# Using pnpm
+pnpm add config-ship
+```
+
+## Basic Usage
+
+### 1. Create a Configuration File
+
+Create a configuration file (e.g., `app.config.ts`):
+
+```typescript
+// app.config.ts
+export default {
+    app: {
+        name: 'MyApp',
+        version: '1.0.0',
+    },
+    server: {
+        host: 'localhost',
+        port: 3000,
+        environment: process.env.NODE_ENV || 'development',
+    },
+    features: {
+        darkMode: true,
+        notifications: true,
+    },
+};
+```
+
+### 2. Use the Configuration in Your Application
+
+```typescript
+// app.ts
+import { createConfig } from 'config-ship';
+import config from './app.config.js';
+
+// Initialize the configuration
+const appConfig = createConfig({
+    defaults: config,
+    envPrefix: 'APP_', // Optional: prefix for environment variables
+    envFile: '.env', // Optional: path to .env file
+});
+
+// Access configuration values
+console.log(`Starting ${appConfig.get('app.name')} v${appConfig.get('app.version')}`);
+console.log(
+    `Server running at http://${appConfig.get('server.host')}:${appConfig.get('server.port')}`
+);
+
+// Check feature flags
+if (appConfig.get('features.darkMode')) {
+    console.log('Dark mode is enabled');
+}
+```
+
+## Environment Variables
+
+Config-Ship can load environment variables from a `.env` file or `process.env`. By default, it looks for a `.env` file in your project root.
+
+Example `.env` file:
+
+```env
+APP_SERVER_PORT=4000
+APP_FEATURES_DARKMODE=false
+```
+
+Environment variables should be prefixed (default is no prefix) and use `_` for nested properties. For example, `server.port` becomes `SERVER_PORT` or `APP_SERVER_PORT` if prefix is set to `APP_`.
+
+## Runtime Configuration
+
+You can modify configuration values at runtime:
+
+```typescript
+// Set a configuration value at runtime
+appConfig.set('server.port', 4000);
+
+// Check if a configuration key exists
+if (appConfig.has('features.notifications')) {
+    console.log('Notifications feature exists');
+}
+
+// Get all configuration
+const allConfig = appConfig.all();
+console.log('Full configuration:', allConfig);
+```
+
+## TypeScript Support
+
+Config-Ship is written in TypeScript and provides excellent type support:
+
+```typescript
+// types.ts
+interface AppConfig {
+    app: {
+        name: string;
+        version: string;
+    };
+    server: {
+        host: string;
+        port: number;
+        environment: 'development' | 'production' | 'test';
+    };
+    features: {
+        darkMode: boolean;
+        notifications: boolean;
+    };
+}
+
+// app.ts
+import { createConfig } from 'config-ship';
+import config from './app.config.js';
+
+const appConfig = createConfig<AppConfig>({
+    defaults: config,
+});
+
+// Type-safe access
+const port: number = appConfig.get('server.port');
+```
+
+## Best Practices
+
+1. **Keep Sensitive Data Secure**: Use environment variables for secrets and sensitive information.
+2. **Use TypeScript**: Take advantage of TypeScript for better type safety and autocompletion.
+3. **Document Configuration**: Document available configuration options and their purposes.
+4. **Environment-Specific Configs**: Use environment variables to adjust configuration between different environments.
+5. **Validate Early**: Validate configuration on application startup to catch issues early.
+
+## API Reference
+
+### `createConfig(options)`: ConfigInstance
+
+Creates a new configuration instance.
+
+**Options:**
+
+- `defaults`: Object containing default configuration values
+- `envPrefix`: Prefix for environment variables (default: '')
+- `envFile`: Path to .env file (default: '.env')
+- `rootFile`: Path to root directory for resolving relative paths (default: process.cwd())
+
+**Returns:**
+
+- `get(key: string): any` - Get a configuration value by dot notation
+- `set(key: string, value: any): void` - Set a configuration value
+- `has(key: string): boolean` - Check if a configuration key exists
+- `all(): object` - Get all configuration values
+
+## Best Practices
+
+1. **Keep Sensitive Data Secure**: Never commit sensitive information directly in your configuration files. Use environment variables for secrets.
+2. **Use Environment-Specific Configs**: Take advantage of environment-specific overrides to manage different deployment environments.
+3. **Validate Early**: Add validation to catch configuration errors as early as possible.
+4. **Document Your Configuration**: Maintain clear documentation for all configuration options and their purposes.
+
+## Conclusion
+
+Config-Ship provides a clean and maintainable way to manage configurations in your JavaScript applications. With its support for environment variables, validation, and TypeScript, it's an excellent choice for projects of any size.
+
+For more advanced usage and API documentation, check out the [official GitHub repository](https://github.com/dibakarmitra/config-ship).
+
+## License
+
+This project is open-source and available under the MIT License.

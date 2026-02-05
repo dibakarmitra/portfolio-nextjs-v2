@@ -1,0 +1,141 @@
+---
+title: 'GraphQL Best Practices and Advanced Patterns'
+date: '2024-02-15'
+excerpt: 'Learn advanced GraphQL patterns and best practices for building efficient APIs.'
+tags: ['GraphQL', 'API', 'Backend', 'Web Development']
+---
+
+# GraphQL Best Practices and Advanced Patterns
+
+GraphQL has transformed how we build APIs. Let's explore advanced patterns and best practices.
+
+## Schema Design
+
+### Type Definitions
+
+```graphql
+type User {
+    id: ID!
+    name: String!
+    email: String!
+    posts: [Post!]!
+    profile: Profile
+}
+
+type Post {
+    id: ID!
+    title: String!
+    content: String!
+    author: User!
+    comments: [Comment!]!
+}
+
+type Profile {
+    bio: String
+    avatar: String
+    socialLinks: [SocialLink!]
+}
+```
+
+## Query Optimization
+
+### Field Selection
+
+```graphql
+query GetUserWithPosts {
+    user(id: "123") {
+        name
+        posts(first: 5) {
+            title
+            comments {
+                content
+            }
+        }
+    }
+}
+```
+
+### Using Fragments
+
+```graphql
+fragment UserFields on User {
+    id
+    name
+    email
+}
+
+query GetUsers {
+    users {
+        ...UserFields
+        posts {
+            title
+        }
+    }
+}
+```
+
+## Mutations
+
+### Input Types
+
+```graphql
+input CreatePostInput {
+    title: String!
+    content: String!
+    tags: [String!]
+}
+
+type Mutation {
+    createPost(input: CreatePostInput!): Post!
+}
+```
+
+## Error Handling
+
+```graphql
+type Error {
+    message: String!
+    code: String!
+    path: [String!]
+}
+
+type PostResult {
+    success: Boolean!
+    post: Post
+    errors: [Error!]
+}
+
+type Mutation {
+    createPost(input: CreatePostInput!): PostResult!
+}
+```
+
+## N+1 Problem Solution
+
+```typescript
+const resolvers = {
+    User: {
+        posts: async (parent, args, context, info) => {
+            return context.dataloaders.posts.load(parent.id);
+        },
+    },
+};
+```
+
+## Best Practices
+
+1. Use DataLoaders for Batching
+2. Implement Proper Pagination
+3. Consider Query Complexity
+4. Cache Effectively
+
+## Security Considerations
+
+1. Rate Limiting
+2. Query Depth Limiting
+3. Field Authorization
+4. Input Validation
+
+## Conclusion
+
+GraphQL provides powerful tools for building flexible APIs. Following these patterns ensures scalable and maintainable applications.

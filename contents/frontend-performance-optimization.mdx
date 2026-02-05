@@ -1,0 +1,338 @@
+---
+title: 'Frontend Performance Optimization: A Comprehensive Guide'
+date: '2023-12-28'
+description: 'Learn advanced techniques for optimizing frontend performance in modern web applications'
+thumbnailUrl: '/images/frontend-performance.jpg'
+tags: ['Performance', 'Web Development', 'JavaScript', 'React']
+---
+
+# Frontend Performance Optimization: A Comprehensive Guide
+
+Performance optimization is crucial for delivering excellent user experiences. This guide explores advanced techniques and best practices for optimizing frontend applications.
+
+## Core Web Vitals
+
+### Largest Contentful Paint (LCP)
+
+```javascript
+// Measure LCP
+new PerformanceObserver((entryList) => {
+    for (const entry of entryList.getEntries()) {
+        console.log('LCP:', entry.startTime);
+        console.log('Element:', entry.element);
+    }
+}).observe({ entryTypes: ['largest-contentful-paint'] });
+```
+
+### First Input Delay (FID)
+
+```javascript
+// Measure FID
+new PerformanceObserver((entryList) => {
+    for (const entry of entryList.getEntries()) {
+        const delay = entry.processingStart - entry.startTime;
+        console.log('FID:', delay);
+    }
+}).observe({ entryTypes: ['first-input'] });
+```
+
+## Image Optimization
+
+### Next.js Image Component
+
+```jsx
+import Image from 'next/image';
+
+function OptimizedImage() {
+    return (
+        <Image
+            src="/large-image.jpg"
+            alt="Optimized image"
+            width={800}
+            height={600}
+            placeholder="blur"
+            blurDataURL="data:image/jpeg;base64,..."
+            priority={true}
+        />
+    );
+}
+```
+
+### Lazy Loading Implementation
+
+```javascript
+// Intersection Observer for lazy loading
+const lazyLoadImages = () => {
+    const images = document.querySelectorAll('[data-src]');
+
+    const imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                imageObserver.unobserve(img);
+            }
+        });
+    });
+
+    images.forEach((img) => imageObserver.observe(img));
+};
+```
+
+## Code Splitting
+
+### React.lazy and Suspense
+
+```jsx
+import React, { Suspense } from 'react';
+
+const HeavyComponent = React.lazy(() => import('./HeavyComponent'));
+
+function App() {
+    return (
+        <Suspense fallback={<LoadingSpinner />}>
+            <HeavyComponent />
+        </Suspense>
+    );
+}
+```
+
+### Route-Based Splitting
+
+```javascript
+// Next.js dynamic imports
+import dynamic from 'next/dynamic';
+
+const DynamicComponent = dynamic(() => import('../components/Heavy'), {
+    loading: () => <p>Loading...</p>,
+    ssr: false,
+});
+```
+
+## Bundle Optimization
+
+### Webpack Configuration
+
+```javascript
+// webpack.config.js
+module.exports = {
+    optimization: {
+        splitChunks: {
+            chunks: 'all',
+            maxInitialRequests: 25,
+            minSize: 20000,
+            cacheGroups: {
+                vendor: {
+                    test: /[\\/]node_modules[\\/]/,
+                    name(module) {
+                        const packageName = module.context.match(
+                            /[\\/]node_modules[\\/](.*?)([\\/]|$)/
+                        )[1];
+                        return `vendor.${packageName.replace('@', '')}`;
+                    },
+                },
+            },
+        },
+    },
+};
+```
+
+## State Management Optimization
+
+### React Performance Hooks
+
+```jsx
+import { useMemo, useCallback } from 'react';
+
+function ExpensiveComponent({ data, onUpdate }) {
+    // Memoize expensive calculations
+    const processedData = useMemo(() => {
+        return data.map((item) => expensiveOperation(item));
+    }, [data]);
+
+    // Memoize callbacks
+    const handleClick = useCallback(() => {
+        onUpdate(processedData);
+    }, [processedData, onUpdate]);
+
+    return (
+        <div onClick={handleClick}>
+            {processedData.map((item) => (
+                <Item key={item.id} {...item} />
+            ))}
+        </div>
+    );
+}
+```
+
+## CSS Performance
+
+### Critical CSS
+
+```javascript
+// Extract critical CSS
+const critical = require('critical');
+
+critical.generate({
+    base: 'dist/',
+    src: 'index.html',
+    target: {
+        css: 'critical.css',
+        html: 'index-critical.html',
+    },
+    width: 1300,
+    height: 900,
+});
+```
+
+### CSS-in-JS Optimization
+
+```jsx
+// Styled-components with dynamic props optimization
+const StyledButton = styled.button`
+    background: ${(props) => (props.primary ? 'blue' : 'gray')};
+    color: white;
+
+    /* Use CSS variables for dynamic values */
+    --button-padding: ${(props) => (props.size === 'large' ? '1rem' : '0.5rem')};
+    padding: var(--button-padding);
+`;
+```
+
+## Memory Management
+
+### Memory Leak Prevention
+
+```javascript
+class Component extends React.Component {
+    componentDidMount() {
+        this.interval = setInterval(this.tick, 1000);
+        window.addEventListener('resize', this.handleResize);
+    }
+
+    componentWillUnmount() {
+        // Clean up subscriptions and listeners
+        clearInterval(this.interval);
+        window.removeEventListener('resize', this.handleResize);
+    }
+}
+```
+
+## Network Optimization
+
+### Service Worker Implementation
+
+```javascript
+// service-worker.js
+const CACHE_NAME = 'v1';
+const urlsToCache = ['/', '/styles/main.css', '/scripts/main.js'];
+
+self.addEventListener('install', (event) => {
+    event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(urlsToCache)));
+});
+
+self.addEventListener('fetch', (event) => {
+    event.respondWith(
+        caches.match(event.request).then((response) => response || fetch(event.request))
+    );
+});
+```
+
+## Virtual DOM Optimization
+
+### React Rendering Optimization
+
+```jsx
+// Use React.memo for component memoization
+const MemoizedComponent = React.memo(
+    function MyComponent(props) {
+        return (
+            <div>
+                <ExpensiveTree {...props} />
+            </div>
+        );
+    },
+    (prevProps, nextProps) => {
+        return prevProps.id === nextProps.id;
+    }
+);
+```
+
+## Performance Monitoring
+
+### Web Vitals Tracking
+
+```javascript
+import { getCLS, getFID, getLCP } from 'web-vitals';
+
+function sendToAnalytics({ name, delta, id }) {
+    // Send metrics to analytics
+    gtag('event', name, {
+        event_category: 'Web Vitals',
+        event_label: id,
+        value: Math.round(name === 'CLS' ? delta * 1000 : delta),
+        non_interaction: true,
+    });
+}
+
+getCLS(sendToAnalytics);
+getFID(sendToAnalytics);
+getLCP(sendToAnalytics);
+```
+
+## Best Practices
+
+### 1. Loading Performance
+
+- Implement progressive loading
+- Use resource hints
+- Optimize critical rendering path
+
+### 2. Runtime Performance
+
+- Avoid layout thrashing
+- Use requestAnimationFrame
+- Debounce and throttle events
+
+### 3. Memory Management
+
+- Clean up event listeners
+- Use WeakMap for caching
+- Monitor memory leaks
+
+## Common Pitfalls
+
+1. **Render Blocking Resources**
+    - Unoptimized images
+    - Render-blocking CSS/JS
+    - Heavy third-party scripts
+
+2. **State Management Issues**
+    - Unnecessary re-renders
+    - Deep component trees
+    - Prop drilling
+
+## Tools and Resources
+
+1. **Performance Measurement**
+    - Lighthouse
+    - Chrome DevTools
+    - WebPageTest
+
+2. **Monitoring Tools**
+    - Google Analytics
+    - New Relic
+    - Sentry
+
+## Conclusion
+
+Frontend performance optimization is an ongoing process that requires attention to multiple aspects of web development. By implementing these techniques and following best practices, you can significantly improve your application's performance and user experience.
+
+## Resources
+
+1. Web Vitals Documentation
+2. Chrome DevTools Documentation
+3. React Performance Documentation
+4. MDN Performance Guide
+5. Google PageSpeed Insights

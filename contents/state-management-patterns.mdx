@@ -1,0 +1,209 @@
+---
+title: 'Modern State Management Patterns in React'
+date: '2024-01-30'
+excerpt: 'Explore different state management patterns and solutions in modern React applications.'
+tags: ['React', 'State Management', 'Redux', 'Zustand']
+---
+
+# Modern State Management Patterns in React
+
+State management is a crucial aspect of modern web applications. Let's explore different patterns and solutions.
+
+## React Context API
+
+```tsx
+// Create context
+const ThemeContext = createContext<{
+    theme: string;
+    setTheme: (theme: string) => void;
+}>({
+    theme: 'light',
+    setTheme: () => {},
+});
+
+// Provider component
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+    const [theme, setTheme] = useState('light');
+
+    return <ThemeContext.Provider value={{ theme, setTheme }}>{children}</ThemeContext.Provider>;
+}
+
+// Usage in components
+function ThemeToggle() {
+    const { theme, setTheme } = useContext(ThemeContext);
+
+    return (
+        <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>Toggle Theme</button>
+    );
+}
+```
+
+## Redux Toolkit
+
+```typescript
+// Store slice
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+
+interface CartState {
+  items: CartItem[];
+  total: number;
+}
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState: { items: [], total: 0 } as CartState,
+  reducers: {
+    addItem: (state, action: PayloadAction<CartItem>) => {
+      state.items.push(action.payload);
+      state.total += action.payload.price;
+    },
+    removeItem: (state, action: PayloadAction<string>) => {
+      const item = state.items.find(item => item.id === action.payload);
+      if (item) {
+        state.total -= item.price;
+        state.items = state.items.filter(item => item.id !== action.payload);
+      }
+    }
+  }
+});
+
+// Usage in components
+function CartComponent() {
+  const cart = useSelector((state: RootState) => state.cart);
+  const dispatch = useDispatch();
+
+  return (
+    <div>
+      <h2>Cart Total: ${cart.total}</h2>
+      {cart.items.map(item => (
+        <div key={item.id}>
+          <span>{item.name}</span>
+          <button onClick={() => dispatch(removeItem(item.id))}>
+            Remove
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+## Zustand
+
+```typescript
+import create from 'zustand';
+
+interface UserStore {
+  user: User | null;
+  setUser: (user: User | null) => void;
+  logout: () => void;
+}
+
+const useUserStore = create<UserStore>((set) => ({
+  user: null,
+  setUser: (user) => set({ user }),
+  logout: () => set({ user: null })
+}));
+
+// Usage
+function UserProfile() {
+  const { user, logout } = useUserStore();
+
+  if (!user) return <LoginButton />;
+
+  return (
+    <div>
+      <h2>Welcome, {user.name}</h2>
+      <button onClick={logout}>Logout</button>
+    </div>
+  );
+}
+```
+
+## Jotai
+
+```typescript
+import { atom, useAtom } from 'jotai';
+
+const counterAtom = atom(0);
+const doubleAtom = atom((get) => get(counterAtom) * 2);
+
+function Counter() {
+  const [count, setCount] = useAtom(counterAtom);
+  const [double] = useAtom(doubleAtom);
+
+  return (
+    <div>
+      <h2>Count: {count}</h2>
+      <h3>Double: {double}</h3>
+      <button onClick={() => setCount(c => c + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+1. Choose the Right Tool
+    - Small apps: React Context/useState
+    - Medium apps: Zustand/Jotai
+    - Large apps: Redux Toolkit
+
+2. State Organization
+    - Keep state close to where it's used
+    - Split global state into domains
+    - Use selectors for derived state
+
+3. Performance Optimization
+    - Memoize selectors
+    - Use context splitting
+    - Implement proper re-render prevention
+
+## Common Patterns
+
+### Command Pattern
+
+```typescript
+type Command = {
+    type: string;
+    payload?: any;
+};
+
+function commandReducer(state: State, command: Command) {
+    switch (command.type) {
+        case 'ADD_ITEM':
+            return {
+                ...state,
+                items: [...state.items, command.payload],
+            };
+        // ... other cases
+    }
+}
+```
+
+### Observer Pattern
+
+```typescript
+const createStore = <T>(initialState: T) => {
+    let state = initialState;
+    const listeners = new Set<(state: T) => void>();
+
+    return {
+        getState: () => state,
+        setState: (newState: T) => {
+            state = newState;
+            listeners.forEach((listener) => listener(state));
+        },
+        subscribe: (listener: (state: T) => void) => {
+            listeners.add(listener);
+            return () => listeners.delete(listener);
+        },
+    };
+};
+```
+
+## Conclusion
+
+Choose the right state management solution based on your application's needs. Consider factors like team size, application complexity, and performance requirements.

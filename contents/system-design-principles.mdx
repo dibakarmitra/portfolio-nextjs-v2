@@ -1,0 +1,297 @@
+---
+title: 'System Design Principles and Best Practices'
+date: '2024-01-15'
+excerpt: 'Learn fundamental principles and patterns for designing scalable, maintainable software systems.'
+tags: ['System Design', 'Architecture', 'Scalability', 'Backend']
+---
+
+# System Design Principles and Best Practices
+
+Understanding system design principles is crucial for building scalable, reliable applications. Let's explore key concepts and patterns.
+
+## Load Balancing
+
+```typescript
+// Load Balancer Interface
+interface LoadBalancer {
+    addServer(server: Server): void;
+    removeServer(server: Server): void;
+    getNextServer(): Server;
+}
+
+// Round Robin Implementation
+class RoundRobinLoadBalancer implements LoadBalancer {
+    private servers: Server[] = [];
+    private currentIndex = 0;
+
+    addServer(server: Server): void {
+        this.servers.push(server);
+    }
+
+    removeServer(server: Server): void {
+        this.servers = this.servers.filter((s) => s.id !== server.id);
+    }
+
+    getNextServer(): Server {
+        if (this.servers.length === 0) {
+            throw new Error('No servers available');
+        }
+
+        const server = this.servers[this.currentIndex];
+        this.currentIndex = (this.currentIndex + 1) % this.servers.length;
+        return server;
+    }
+}
+```
+
+## Caching Strategy
+
+```typescript
+interface Cache<K, V> {
+    get(key: K): V | null;
+    put(key: K, value: V): void;
+    remove(key: K): void;
+}
+
+class LRUCache<K, V> implements Cache<K, V> {
+    private capacity: number;
+    private cache: Map<K, V>;
+    private usage: Map<K, number>;
+    private time: number = 0;
+
+    constructor(capacity: number) {
+        this.capacity = capacity;
+        this.cache = new Map();
+        this.usage = new Map();
+    }
+
+    get(key: K): V | null {
+        const value = this.cache.get(key);
+        if (value !== undefined) {
+            this.usage.set(key, ++this.time);
+            return value;
+        }
+        return null;
+    }
+
+    put(key: K, value: V): void {
+        if (this.cache.size >= this.capacity && !this.cache.has(key)) {
+            // Find least recently used item
+            let lruKey = this.findLRU();
+            this.cache.delete(lruKey);
+            this.usage.delete(lruKey);
+        }
+
+        this.cache.set(key, value);
+        this.usage.set(key, ++this.time);
+    }
+
+    remove(key: K): void {
+        this.cache.delete(key);
+        this.usage.delete(key);
+    }
+
+    private findLRU(): K {
+        let minTime = Infinity;
+        let lruKey: K = null!;
+
+        this.usage.forEach((time, key) => {
+            if (time < minTime) {
+                minTime = time;
+                lruKey = key;
+            }
+        });
+
+        return lruKey;
+    }
+}
+```
+
+## Message Queue
+
+```typescript
+interface Message {
+    id: string;
+    payload: any;
+    timestamp: number;
+}
+
+class MessageQueue {
+    private queue: Message[] = [];
+    private consumers: Set<(message: Message) => void> = new Set();
+
+    publish(message: Message): void {
+        this.queue.push(message);
+        this.notifyConsumers(message);
+    }
+
+    subscribe(callback: (message: Message) => void): () => void {
+        this.consumers.add(callback);
+        return () => this.consumers.delete(callback);
+    }
+
+    private notifyConsumers(message: Message): void {
+        this.consumers.forEach((callback) => {
+            try {
+                callback(message);
+            } catch (error) {
+                console.error('Error processing message:', error);
+            }
+        });
+    }
+}
+```
+
+## Rate Limiting
+
+```typescript
+class TokenBucket {
+    private tokens: number;
+    private lastRefill: number;
+    private readonly capacity: number;
+    private readonly refillRate: number;
+
+    constructor(capacity: number, refillRate: number) {
+        this.capacity = capacity;
+        this.refillRate = refillRate;
+        this.tokens = capacity;
+        this.lastRefill = Date.now();
+    }
+
+    consume(tokens: number = 1): boolean {
+        this.refill();
+
+        if (this.tokens >= tokens) {
+            this.tokens -= tokens;
+            return true;
+        }
+
+        return false;
+    }
+
+    private refill(): void {
+        const now = Date.now();
+        const timePassed = now - this.lastRefill;
+        const tokensToAdd = (timePassed * this.refillRate) / 1000;
+
+        this.tokens = Math.min(this.capacity, this.tokens + tokensToAdd);
+        this.lastRefill = now;
+    }
+}
+```
+
+## Service Discovery
+
+```typescript
+interface ServiceRegistry {
+    register(service: Service): void;
+    unregister(serviceId: string): void;
+    discover(serviceName: string): Service[];
+}
+
+class EtcdServiceRegistry implements ServiceRegistry {
+    private services: Map<string, Service[]> = new Map();
+
+    register(service: Service): void {
+        const services = this.services.get(service.name) || [];
+        services.push(service);
+        this.services.set(service.name, services);
+    }
+
+    unregister(serviceId: string): void {
+        this.services.forEach((services, name) => {
+            const filtered = services.filter((s) => s.id !== serviceId);
+            if (filtered.length > 0) {
+                this.services.set(name, filtered);
+            } else {
+                this.services.delete(name);
+            }
+        });
+    }
+
+    discover(serviceName: string): Service[] {
+        return this.services.get(serviceName) || [];
+    }
+}
+```
+
+## Circuit Breaker
+
+```typescript
+enum CircuitState {
+    CLOSED,
+    OPEN,
+    HALF_OPEN,
+}
+
+class CircuitBreaker {
+    private state: CircuitState = CircuitState.CLOSED;
+    private failures: number = 0;
+    private lastFailure: number = 0;
+    private readonly threshold: number;
+    private readonly timeout: number;
+
+    constructor(threshold: number = 5, timeout: number = 60000) {
+        this.threshold = threshold;
+        this.timeout = timeout;
+    }
+
+    async execute<T>(action: () => Promise<T>, fallback: () => Promise<T>): Promise<T> {
+        if (this.state === CircuitState.OPEN) {
+            if (Date.now() - this.lastFailure >= this.timeout) {
+                this.state = CircuitState.HALF_OPEN;
+            } else {
+                return fallback();
+            }
+        }
+
+        try {
+            const result = await action();
+            if (this.state === CircuitState.HALF_OPEN) {
+                this.state = CircuitState.CLOSED;
+                this.failures = 0;
+            }
+            return result;
+        } catch (error) {
+            this.failures++;
+            this.lastFailure = Date.now();
+
+            if (this.failures >= this.threshold) {
+                this.state = CircuitState.OPEN;
+            }
+
+            return fallback();
+        }
+    }
+}
+```
+
+## Best Practices
+
+1. Scalability
+    - Horizontal scaling
+    - Database sharding
+    - Caching strategies
+    - Load balancing
+
+2. Reliability
+    - Circuit breakers
+    - Retry mechanisms
+    - Fallback strategies
+    - Error handling
+
+3. Maintainability
+    - Service discovery
+    - Configuration management
+    - Monitoring and logging
+    - Documentation
+
+4. Performance
+    - Caching
+    - Connection pooling
+    - Asynchronous processing
+    - Resource optimization
+
+## Conclusion
+
+Effective system design requires careful consideration of scalability, reliability, and maintainability. These patterns and principles provide a foundation for building robust systems.

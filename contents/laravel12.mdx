@@ -1,0 +1,98 @@
+---
+title: "Laravel 12 – What's New & How to Get Started"
+date: '2025-03-11'
+excerpt: 'A comprehensive guide to Laravel 12 features and best practices for modern web development.'
+tags: 'Laravel, PHP, Web Development, Laravel 12'
+---
+
+# Laravel 12 – What's New & How to Get Started
+
+Laravel 12 is here! This release focuses on making development even smoother with new tools, performance improvements, and minimal breaking changes. If you're a Laravel developer, here's what you need to know.
+
+## What's New in Laravel 12?
+
+### 🚀 Modern Starter Kits
+
+Laravel 12 brings new starter kits for React, Vue, and Livewire. These kits come with:
+
+- **Inertia.js** for seamless single-page app experiences.
+- **TypeScript** for better maintainability.
+- **Tailwind CSS & ShadCN UI** for a sleek design.
+- **WorkOS AuthKit** (optional) for easy social login, passkeys, and SSO.
+
+### 🔥 Faster & More Efficient
+
+- **xxHash replaces MD5**, making hashing faster.
+- **UUID v7 support**, improving database indexing.
+- **MariaDB CLI Support**, so you can now use MariaDB natively in Laravel.
+- **Collection::range now includes a step parameter**, making sequence generation more flexible.
+
+### 🔧 Easier Debugging
+
+- **`debug()->suggest()`** helps identify issues faster by suggesting solutions in real-time.
+
+### 🔑 Stronger Password Security
+
+- **New password validation rules** to enforce stronger passwords.
+
+## How to Install Laravel 12
+
+Getting started with Laravel 12 is easy. Just follow these steps:
+
+1. **Install Laravel globally (if you haven't already):**
+
+    ```bash
+    composer global require laravel/installer
+    ```
+
+2. **Create a new Laravel 12 project:**
+
+    ```bash
+    laravel new myproject
+    cd myproject
+    ```
+
+3. **Install dependencies:**
+
+    ```bash
+    composer install
+    ```
+
+4. **Set up your environment file:**
+
+    ```bash
+    cp .env.example .env
+    ```
+
+    Configure your database and other settings in `.env`.
+
+5. **Generate an application key:**
+
+    ```bash
+    php artisan key:generate
+    ```
+
+6. **Run database migrations:**
+
+    ```bash
+    php artisan migrate
+    ```
+
+7. **Start the development server:**
+    ```bash
+    php artisan serve
+    ```
+    Your Laravel 12 app is now running at `http://localhost:8000`! 🎉
+
+## Why Upgrade to Laravel 12?
+
+- **Minimal breaking changes** – upgrading is easy.
+- **Better performance** with faster hashing and indexing.
+- **More tools for modern web apps** like React, Vue, and Livewire.
+- **Improved security** with stronger password validation.
+
+## License
+
+This project is open-source and available under the MIT License.
+
+Laravel 12 makes development smoother and more powerful. Ready to build something amazing? 🚀

@@ -1,0 +1,15 @@
+export { AwardsPage } from './AwardsPage';
+export { CertificationsPage } from './CertificationsPage';
+export { DashboardPage } from './DashboardPage';
+export { EducationPage } from './EducationPage';
+export { ExperiencePage } from './ExperiencePage';
+export { LanguagesPage } from './LanguagesPage';
+export { LogsPage } from './LogsPage';
+export { MediaPage } from './MediaPage';
+export { NotesPage } from './NotesPage';
+export { PostDetailPage } from './PostDetailPage';
+export { ProjectsPage } from './ProjectsPage';
+export { SettingsPage } from './SettingsPage';
+export { SkillsPage } from './SkillsPage';
+export { StrengthsPage } from './StrengthsPage';
+export { TestimonialsPage } from './TestimonialsPage';

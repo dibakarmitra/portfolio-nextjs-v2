@@ -1,0 +1,330 @@
+---
+title: 'Laravel Dynamic Filters: A Comprehensive Guide to Flexible Query Building'
+published: true
+date: '2025-09-18'
+description: 'Learn how to implement powerful, flexible filtering in your Laravel applications with the Laravel Dynamic Filters package.'
+image: 'https://via.placeholder.com/1200x630.png/007bff/ffffff?text=Laravel+Dynamic+Filters'
+tags:
+    - laravel
+    - php
+    - query-builder
+    - api
+    - filters
+---
+
+# Laravel Dynamic Filters
+
+A robust and flexible filtering system for Laravel Eloquent models that makes building complex, dynamic queries a breeze. This package provides an elegant, fluent API for filtering, searching, and sorting your Eloquent models with minimal configuration.
+
+## ✨ Key Features
+
+- **Expressive Filtering**: Chainable methods and intuitive syntax for complex queries
+- **Advanced Search**: Full-text search with fuzzy matching and term normalization
+- **Relationship Support**: Filter across model relationships with nested conditions
+- **Type Safety**: Strict type checking and automatic value casting
+- **Performance Optimized**: Efficient query building with minimal overhead
+- **Security First**: Whitelisting and input validation out of the box
+- **Extensible**: Easy to create and register custom filters
+- **Modern PHP**: Built with PHP 8.1+ features and type hints
+
+## 🚀 Installation
+
+### Requirements
+
+- PHP 8.1 or higher
+- Laravel 10.x or later
+- Composer
+
+### Install via Composer
+
+```bash
+composer require dibakar/laravel-dynamic-filters
+```
+
+### Publish Configuration (Optional)
+
+```bash
+php artisan vendor:publish --provider="Dibakar\LaravelDynamicFilters\DynamicFiltersServiceProvider" --tag="config"
+```
+
+## 🚀 Quick Start
+
+### 1. Prepare Your Model
+
+Add the `HasDynamicFilter` trait to your Eloquent model and define the filterable, searchable, and sortable fields:
+
+```php
+use Dibakar\LaravelDynamicFilters\Traits\HasDynamicFilter;
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    use HasDynamicFilter;
+
+    /**
+     * Fields that can be searched.
+     */
+    protected $searchable = [
+        'title',
+        'content',
+        'author.name',       // Search in relationships
+        'tags.name'          // Search in many-to-many relationships
+    ];
+
+    /**
+     * Fields that can be filtered with operators.
+     */
+    protected $filterable = [
+        'id',
+        'status',
+        'category_id',
+        'published_at',
+        'views',
+        'is_featured',
+    ];
+
+    /**
+     * Fields that can be used for sorting.
+     */
+    protected $sortable = [
+        'created_at' => 'desc',  // Default sort
+        'title' => 'asc',
+        'views' => 'desc',
+    ];
+}
+```
+
+### 2. Basic Filtering
+
+Filter your models using query parameters in your controller:
+
+```php
+// GET /posts?status=published&created_at[gt]=2023-01-01&sort=-views,title
+public function index(Request $request)
+{
+    $posts = Post::filter($request->query())
+        ->with(['author', 'category', 'tags']) // Eager load relationships
+        ->paginate($request->per_page ?? 15);
+
+    return response()->json($posts);
+}
+```
+
+### 3. Search Functionality
+
+Search across searchable fields with a simple API:
+
+```php
+// GET /posts?q=laravel+framework
+public function search(Request $request)
+{
+    $posts = Post::search($request->q)
+        ->filter($request->except('q')) // Apply additional filters
+        ->paginate($request->per_page ?? 15);
+
+    return response()->json($posts);
+}
+```
+
+### 4. Sorting Results
+
+Sort your results using the `sort` parameter in your requests. The `-` prefix indicates descending order.
+
+```php
+// In your controller
+$posts = Post::sort($request->input('sort'))->get();
+
+// Or chain it with filters
+$posts = Post::filter($filters)
+    ->sort($request->input('sort', 'created_at,desc'))
+    ->paginate(15);
+```
+
+Example requests:
+
+```
+GET /posts?sort=title             // Sort by title (ascending)
+GET /posts?sort=title,asc         // Same as above (explicit ascending)
+GET /posts?sort=title,desc        // Sort by title (descending)
+GET /posts?sort=-title            // Alternative: Sort by title (descending)
+GET /posts?sort=views,desc&sort=title,asc  // Multiple sort fields
+```
+
+### 5. Pagination
+
+Pagination works seamlessly with Laravel's built-in pagination:
+
+```php
+// GET /posts?page=2&per_page=20
+$posts = Post::filter($request->query())
+    ->paginate($request->per_page ?? 15);
+```
+
+## 🚀 Advanced Usage
+
+### Complex Filter Groups
+
+Create complex filter conditions with AND/OR logic:
+
+```php
+// Example: (status = 'published' AND (title LIKE '%Laravel%' OR views > 100)) AND (author_id = 1 OR author_id = 2)
+$filters = [
+    '_group' => [
+        'boolean' => 'and',
+        'filters' => [
+            'status' => 'published',
+        ],
+        'nested' => [
+            [
+                'boolean' => 'or',
+                'filters' => [
+                    'title' => ['like' => '%Laravel%'],
+                    'views' => ['gt' => 100],
+                ],
+            ],
+            [
+                'boolean' => 'or',
+                'filters' => [
+                    'author_id' => [1, 2],
+                ],
+            ],
+        ],
+    ],
+];
+
+$posts = Post::filter($filters)->get();
+```
+
+### Custom Filter Classes
+
+For complex filtering logic, create a custom filter class:
+
+```php
+<?php
+
+namespace App\Filters;
+
+use Dibakar\LaravelDynamicFilters\Contracts\FilterContract;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+
+class PublishedInLastDaysFilter implements FilterContract
+{
+    public function apply(Builder $query, $value, string $property): Builder
+    {
+        $days = is_numeric($value) ? (int) $value : 7; // Default to 7 days if invalid
+        return $query->where('published_at', '>=', Carbon::now()->subDays($days));
+    }
+
+    public function validate($value): bool
+    {
+        return is_numeric($value) && $value > 0;
+    }
+
+    public function getValidationMessage(): string
+    {
+        return 'The days parameter must be a positive number.';
+    }
+}
+```
+
+Register your custom filter in `config/dynamic-filters.php`:
+
+```php
+'custom_filters' => [
+    'published_in_days' => \App\Filters\PublishedInLastDaysFilter::class,
+    // Add more custom filters as needed
+],
+```
+
+Now use it in your API:
+
+```
+// GET /posts?published_in_days=30
+$recentPosts = Post::filter(request()->query())->get();
+```
+
+## Available Operators
+
+| Operator  | Description                       | Example                                      |
+| --------- | --------------------------------- | -------------------------------------------- |
+| `=`       | Equals                            | `?status=active`                             |
+| `neq`     | Not equals                        | `?status[neq]=inactive`                      |
+| `gt`      | Greater than                      | `?views[gt]=100`                             |
+| `gte`     | Greater than or equal             | `?rating[gte]=4`                             |
+| `lt`      | Less than                         | `?price[lt]=100`                             |
+| `lte`     | Less than or equal                | `?age[lte]=30`                               |
+| `like`    | Case-sensitive pattern matching   | `?name[like]=%john%`                         |
+| `ilike`   | Case-insensitive pattern matching | `?email[ilike]=%gmail.com`                   |
+| `in`      | Value is in list                  | `?status[in]=active,pending`                 |
+| `not_in`  | Value is not in list              | `?id[not_in]=1,2,3`                          |
+| `between` | Value is between two values       | `?created_at[between]=2023-01-01,2023-12-31` |
+| `null`    | Field is null                     | `?deleted_at[null]`                          |
+| `notnull` | Field is not null                 | `?updated_at[notnull]`                       |
+
+## Performance Optimization
+
+### Database Indexing
+
+```php
+// In a migration
+public function up()
+{
+    Schema::table('posts', function (Blueprint $table) {
+        // Single column indexes
+        $table->index('status');
+        $table->index('published_at');
+        $table->index('views');
+
+        // Composite index for common filter combinations
+        $table->index(['status', 'published_at']);
+        $table->index(['category_id', 'status', 'published_at']);
+    });
+}
+```
+
+### Selective Field Loading
+
+```php
+// Only select the fields you need
+$posts = Post::select([
+        'id', 'title', 'slug', 'excerpt',
+        'status', 'published_at', 'author_id', 'category_id'
+    ])
+    ->with([
+        'author:id,name,avatar',
+        'category:id,name,slug',
+        'tags:id,name,slug'
+    ])
+    ->filter($filters)
+    ->paginate(15);
+```
+
+## Security
+
+By default, only fields defined in the `$filterable` array can be filtered. This is a security measure to prevent unauthorized filtering on sensitive fields.
+
+You can also define a global whitelist in the config file that applies to all models:
+
+```php
+'global_whitelist' => [
+    'id',
+    'status',
+    'created_at',
+    'updated_at',
+],
+```
+
+## Conclusion
+
+Laravel Dynamic Filters provides a powerful, flexible, and secure way to implement complex filtering in your Laravel applications. With its intuitive API and extensive feature set, you can quickly build robust filtering solutions that scale with your application's needs.
+
+## Resources
+
+- [GitHub Repository](https://github.com/dibakarmitra/laravel-dynamic-filters)
+- [Packagist](https://packagist.org/packages/dibakar/laravel-dynamic-filters)
+- [Issues](https://github.com/dibakarmitra/laravel-dynamic-filters/issues)
+
+## License
+
+The MIT License (MIT). Please see [License File](https://github.com/dibakarmitra/laravel-dynamic-filters/blob/main/LICENSE.md) for more information.

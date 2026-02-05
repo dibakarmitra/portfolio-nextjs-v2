@@ -1,0 +1,247 @@
+---
+title: 'Web Security Best Practices for Modern Applications'
+date: '2024-10-25'
+excerpt: 'Learn essential security practices to protect your web applications from common vulnerabilities and attacks.'
+tags: ['Security', 'Web Development', 'Authentication', 'OWASP']
+---
+
+# Web Security Best Practices for Modern Applications
+
+Security is paramount in modern web applications. Let's explore essential practices to protect your applications.
+
+## Authentication
+
+### Secure Password Hashing
+
+```typescript
+import * as bcrypt from 'bcrypt';
+
+async function hashPassword(password: string): Promise<string> {
+    const saltRounds = 12;
+    return await bcrypt.hash(password, saltRounds);
+}
+
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+    return await bcrypt.compare(password, hash);
+}
+```
+
+## JWT Implementation
+
+```typescript
+import * as jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET!;
+
+interface TokenPayload {
+    userId: string;
+    role: string;
+}
+
+function generateToken(payload: TokenPayload): string {
+    return jwt.sign(payload, JWT_SECRET, {
+        expiresIn: '1h',
+        algorithm: 'HS256',
+    });
+}
+
+function verifyToken(token: string): TokenPayload {
+    try {
+        return jwt.verify(token, JWT_SECRET) as TokenPayload;
+    } catch (error) {
+        throw new Error('Invalid token');
+    }
+}
+```
+
+## XSS Prevention
+
+### Content Security Policy
+
+```typescript
+// Express middleware
+app.use((req, res, next) => {
+    res.setHeader(
+        'Content-Security-Policy',
+        "default-src 'self'; " +
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+            "style-src 'self' 'unsafe-inline';"
+    );
+    next();
+});
+```
+
+### Input Sanitization
+
+```typescript
+import { sanitize } from 'dompurify';
+
+function sanitizeUserInput(input: string): string {
+  return sanitize(input, {
+    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a'],
+    ALLOWED_ATTR: ['href']
+  });
+}
+
+// Usage in React
+function CommentDisplay({ comment }: { comment: string }) {
+  return <div dangerouslySetInnerHTML={{
+    __html: sanitizeUserInput(comment)
+  }} />;
+}
+```
+
+## CSRF Protection
+
+```typescript
+import csurf from 'csurf';
+
+// Express middleware
+app.use(csurf());
+
+// React component
+function Form() {
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')
+    ?.getAttribute('content');
+
+  return (
+    <form method="POST" action="/api/submit">
+      <input type="hidden" name="_csrf" value={csrfToken} />
+      {/* form fields */}
+    </form>
+  );
+}
+```
+
+## SQL Injection Prevention
+
+```typescript
+import { Pool } from 'pg';
+
+const pool = new Pool();
+
+async function getUserById(id: string) {
+    // Use parameterized queries
+    const query = {
+        text: 'SELECT * FROM users WHERE id = $1',
+        values: [id],
+    };
+
+    try {
+        const result = await pool.query(query);
+        return result.rows[0];
+    } catch (error) {
+        console.error('Database error:', error);
+        throw error;
+    }
+}
+```
+
+## Rate Limiting
+
+```typescript
+import rateLimit from 'express-rate-limit';
+
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later',
+});
+
+// Apply to all routes
+app.use(limiter);
+
+// Apply to specific routes
+app.use(
+    '/api/login',
+    rateLimit({
+        windowMs: 60 * 60 * 1000, // 1 hour
+        max: 5, // 5 attempts per hour
+        message: 'Too many login attempts, please try again later',
+    })
+);
+```
+
+## Secure Headers
+
+```typescript
+import helmet from 'helmet';
+
+app.use(
+    helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", 'data:', 'https:'],
+            },
+        },
+        referrerPolicy: { policy: 'same-origin' },
+    })
+);
+```
+
+## Best Practices
+
+1. Security Headers
+    - Use HTTPS
+    - Set secure cookies
+    - Implement HSTS
+    - Enable CORS properly
+
+2. Authentication
+    - Implement MFA
+    - Use secure session management
+    - Implement proper password policies
+    - Handle logout properly
+
+3. Data Protection
+    - Encrypt sensitive data
+    - Implement proper access control
+    - Regular security audits
+    - Keep dependencies updated
+
+## Security Checklist
+
+```typescript
+interface SecurityChecklist {
+    authentication: {
+        passwordHashing: boolean;
+        mfa: boolean;
+        sessionManagement: boolean;
+    };
+    headers: {
+        https: boolean;
+        csp: boolean;
+        hsts: boolean;
+    };
+    dataProtection: {
+        encryption: boolean;
+        accessControl: boolean;
+        backups: boolean;
+    };
+}
+
+const securityAudit: SecurityChecklist = {
+    authentication: {
+        passwordHashing: true,
+        mfa: true,
+        sessionManagement: true,
+    },
+    headers: {
+        https: true,
+        csp: true,
+        hsts: true,
+    },
+    dataProtection: {
+        encryption: true,
+        accessControl: true,
+        backups: true,
+    },
+};
+```
+
+## Conclusion
+
+Security should be a continuous process, not a one-time implementation. Regular audits and updates are essential to maintain a secure application.

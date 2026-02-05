@@ -1,0 +1,190 @@
+---
+title: 'Modern Web Animation Techniques'
+date: '2024-02-20'
+excerpt: 'Explore modern web animation techniques using CSS, JavaScript, and popular animation libraries.'
+tags: ['Animation', 'CSS', 'JavaScript', 'Web Development']
+---
+
+# Modern Web Animation Techniques
+
+Creating smooth, performant animations is crucial for modern web applications. Let's explore various techniques and best practices.
+
+## CSS Animations
+
+### Basic Keyframe Animations
+
+```css
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.slide-in {
+    animation: slideIn 0.3s ease-out forwards;
+}
+```
+
+### CSS Transitions
+
+```css
+.button {
+    transition: transform 0.2s ease-in-out;
+}
+
+.button:hover {
+    transform: scale(1.05);
+}
+```
+
+## JavaScript Animations
+
+### Web Animations API
+
+```javascript
+element.animate(
+    [
+        { transform: 'scale(1)', opacity: 1 },
+        { transform: 'scale(1.5)', opacity: 0 },
+    ],
+    {
+        duration: 300,
+        easing: 'ease-in-out',
+        fill: 'forwards',
+    }
+);
+```
+
+### RequestAnimationFrame
+
+```javascript
+function animate(element) {
+    let start;
+
+    function step(timestamp) {
+        if (!start) start = timestamp;
+        const progress = timestamp - start;
+
+        element.style.transform = `translateX(${Math.min(progress / 10, 200)}px)`;
+
+        if (progress < 2000) {
+            requestAnimationFrame(step);
+        }
+    }
+
+    requestAnimationFrame(step);
+}
+```
+
+## Animation Libraries
+
+### GSAP (GreenSock)
+
+```javascript
+import gsap from 'gsap';
+
+// Basic animation
+gsap.to('.element', {
+    duration: 1,
+    x: 100,
+    y: 50,
+    rotation: 360,
+    ease: 'power2.inOut',
+});
+
+// Timeline for complex sequences
+const timeline = gsap.timeline();
+timeline
+    .to('.box1', { duration: 0.5, opacity: 1 })
+    .to('.box2', { duration: 0.5, opacity: 1 }, '+=0.2');
+```
+
+### React with GSAP
+
+```jsx
+import gsap from 'gsap';
+import { useEffect, useRef } from 'react';
+
+function AnimatedComponent() {
+    const elementRef = useRef(null);
+
+    useEffect(() => {
+        gsap.from(elementRef.current, {
+            duration: 0.7,
+            opacity: 0,
+            y: 20,
+            ease: 'power2.out',
+        });
+    }, []);
+
+    return <div ref={elementRef}>Smooth entrance with GSAP!</div>;
+}
+```
+
+## Performance Optimization
+
+1. **Use Transform and Opacity**
+    - These properties are GPU-accelerated
+    - Avoid animating layout properties
+
+2. **Debounce and Throttle**
+
+    ```javascript
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    ```
+
+3. **Will-change Property**
+    ```css
+    .animated-element {
+        will-change: transform;
+    }
+    ```
+
+## Accessibility Considerations
+
+1. **Respect User Preferences**
+
+    ```css
+    @media (prefers-reduced-motion: reduce) {
+        * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+    ```
+
+2. **ARIA Labels**
+    ```html
+    <div role="alert" aria-live="polite" className="animated-notification">
+        New message received
+    </div>
+    ```
+
+## Best Practices
+
+1. Keep animations subtle and purposeful
+2. Use appropriate timing functions
+3. Consider mobile performance
+4. Test across different browsers
+5. Implement fallbacks for older browsers
+
+## Conclusion
+
+Modern web animations can significantly enhance user experience when implemented correctly. By following these techniques and best practices, you can create smooth, performant, and accessible animations that delight your users without compromising performance.

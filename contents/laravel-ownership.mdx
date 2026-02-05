@@ -1,0 +1,82 @@
+---
+title: 'Laravel Ownership Package – Simplify Model Ownership in Laravel'
+date: '2025-09-05'
+excerpt: 'A guide to the dibakar/laravel-ownership package for handling model ownership with ease in Laravel.'
+tags: 'Laravel, PHP, Package, Ownership, Eloquent'
+---
+
+# Laravel Ownership Package – Simplify Model Ownership in Laravel
+
+Managing ownership relationships between models can get tricky in Laravel projects. The **[Laravel Ownership package](https://github.com/dibakarmitra/laravel-ownership)** by Dibakar Mitra makes it simple and elegant.
+
+## 🚀 What is Laravel Ownership?
+
+This package allows you to assign and manage ownership between different models. For example, a `User` can own a `Project`, `Team`, or any other entity. It uses a clean polymorphic approach without repeating boilerplate code.
+
+## ✨ Features
+
+- Polymorphic ownership handling out of the box.
+- Easy to integrate with existing models.
+- Supports roles for more advanced ownership structures.
+- Database migration included (`ownerships` table).
+- Works seamlessly with **Laravel 9, 10, and 11**.
+
+## 📦 Installation
+
+1. Require the package:
+
+    ```bash
+    composer require dibakar/laravel-ownership
+    ```
+
+    _(if you’re testing the dev branch, use `composer require dibakar/laravel-ownership:dev-main`)_
+
+2. Publish and run the migration:
+
+    ```bash
+    php artisan vendor:publish --tag=ownership-migrations
+    php artisan migrate
+    ```
+
+3. Add the `HasOwnership` trait to your models:
+
+    ```php
+    use Dibakar\Ownership\Traits\HasOwnership;
+
+    class Project extends Model
+    {
+        use HasOwnership;
+    }
+    ```
+
+## 🔧 Usage Example
+
+```php
+$project = Project::find(1);
+$user = User::find(1);
+
+// Assign ownership
+$project->addOwner($user, 'manager');
+
+// Check ownership
+if ($project->isOwnedBy($user)) {
+    echo "User owns this project!";
+}
+```
+
+## 🤝 Why Use This Package?
+
+- Keeps your code clean and DRY.
+- Avoids writing repetitive relationship logic.
+- Flexible enough to handle **teams, clients, vendors, or multi-role ownership**.
+
+## 📚 Resources
+
+- [GitHub Repository](https://github.com/dibakarmitra/laravel-ownership)
+- [Packagist Package](https://packagist.org/packages/dibakar/laravel-ownership)
+
+## License
+
+This package is open-source and available under the MIT License.
+
+Make ownership handling in Laravel easy and maintainable with **dibakar/laravel-ownership**. 🚀

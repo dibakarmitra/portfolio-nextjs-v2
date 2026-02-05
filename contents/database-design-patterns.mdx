@@ -1,0 +1,352 @@
+---
+title: 'Database Design Patterns and Best Practices'
+date: '2024-01-05'
+excerpt: 'Learn essential database design patterns and practices for building efficient and scalable data structures.'
+tags: ['Database', 'SQL', 'NoSQL', 'Data Modeling']
+---
+
+# Database Design Patterns and Best Practices
+
+Effective database design is crucial for application performance and scalability. Let's explore key patterns and practices.
+
+## Schema Design
+
+### Relational Database Schema
+
+```sql
+-- Users Table
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) UNIQUE NOT NULL CHECK (email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Posts Table
+CREATE TABLE posts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    content TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
+    published_at TIMESTAMP WITH TIME ZONE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tags Table
+CREATE TABLE tags (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(50) UNIQUE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Posts Tags Junction Table
+CREATE TABLE posts_tags (
+    post_id UUID REFERENCES posts(id) ON DELETE CASCADE,
+    tag_id UUID REFERENCES tags(id) ON DELETE CASCADE,
+    PRIMARY KEY (post_id, tag_id)
+);
+
+-- Indexes
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_status ON posts(status);
+CREATE INDEX idx_posts_published_at ON posts(published_at);
+```
+
+## NoSQL Schema Design
+
+### MongoDB Schema
+
+```typescript
+import { ObjectId } from 'mongodb';
+
+interface User {
+    _id: ObjectId;
+    email: string;
+    passwordHash: string;
+    fullName: string;
+    profile: {
+        bio: string;
+        avatar: string;
+        socialLinks: {
+            platform: string;
+            url: string;
+        }[];
+    };
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+// MongoDB Schema Validation
+db.createCollection('users', {
+    validator: {
+        $jsonSchema: {
+            bsonType: 'object',
+            required: ['email', 'passwordHash', 'fullName'],
+            properties: {
+                email: {
+                    bsonType: 'string',
+                    pattern: '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$',
+                },
+            },
+        },
+    },
+});
+
+interface Post {
+    _id: ObjectId;
+    userId: ObjectId;
+    title: string;
+    content: string;
+    status: 'draft' | 'published' | 'archived';
+    tags: string[];
+    comments: {
+        userId: ObjectId;
+        content: string;
+        createdAt: Date;
+    }[];
+    metadata: {
+        views: number;
+        likes: number;
+        shares: number;
+    };
+    publishedAt?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+}
+```
+
+## Query Optimization
+
+### SQL Query Optimization
+
+```sql
+-- Using Indexes Effectively
+EXPLAIN ANALYZE
+SELECT p.*, u.full_name as author_name
+FROM posts p
+JOIN users u ON p.user_id = u.id
+WHERE p.status = 'published'
+  AND p.published_at >= NOW() - INTERVAL '7 days'
+ORDER BY p.published_at DESC
+LIMIT 10;
+
+-- Optimized Query with Materialized View
+CREATE MATERIALIZED VIEW recent_posts AS
+SELECT
+    p.*,
+    u.full_name as author_name,
+    COUNT(c.id) as comment_count
+FROM posts p
+JOIN users u ON p.user_id = u.id
+LEFT JOIN comments c ON p.id = c.post_id
+WHERE p.status = 'published'
+GROUP BY p.id, u.full_name
+ORDER BY p.published_at DESC;
+
+-- Refresh Materialized View
+REFRESH MATERIALIZED VIEW recent_posts;
+```
+
+## Database Migrations
+
+```typescript
+import { MigrationInterface, QueryRunner } from 'typeorm';
+
+export class AddUserProfileTable1641234567890 implements MigrationInterface {
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
+      CREATE TABLE user_profiles (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        user_id UUID NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+        bio TEXT,
+        avatar_url VARCHAR(255),
+        location VARCHAR(100),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE INDEX idx_user_profiles_user_id ON user_profiles(user_id);
+    `);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`
+      DROP TABLE user_profiles;
+    `);
+    }
+}
+```
+
+## Connection Pooling
+
+```typescript
+import { Pool, QueryResult } from 'pg';
+
+interface DatabaseConfig {
+    user: string;
+    host: string;
+    database: string;
+    password: string;
+    port: number;
+    max: number;
+    idleTimeoutMillis: number;
+    connectionTimeoutMillis: number;
+}
+
+const config: DatabaseConfig = {
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: parseInt(process.env.DB_PORT || '5432'),
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+};
+
+const pool = new Pool(config);
+
+// Error handling
+pool.on('error', (err: Error) => {
+    console.error('Unexpected error on idle client', err);
+    process.exit(-1);
+});
+
+interface Post {
+    id: string;
+    user_id: string;
+    title: string;
+    content: string;
+    status: 'draft' | 'published' | 'archived';
+    published_at: Date | null;
+    created_at: Date;
+    updated_at: Date;
+}
+
+async function getUserPosts(userId: string): Promise<Post[]> {
+    const client = await pool.connect();
+    try {
+        const result: QueryResult<Post> = await client.query(
+            'SELECT * FROM posts WHERE user_id = $1',
+            [userId]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error fetching user posts:', error);
+        throw error;
+    } finally {
+        client.release();
+    }
+}
+```
+
+## Caching Strategies
+
+```typescript
+import Redis from 'ioredis';
+
+class CacheManager {
+    private redis: Redis;
+    private defaultTTL: number;
+
+    constructor(redisUrl: string, defaultTTL: number = 3600) {
+        this.redis = new Redis(redisUrl);
+        this.defaultTTL = defaultTTL;
+    }
+
+    async get<T>(key: string): Promise<T | null> {
+        const data = await this.redis.get(key);
+        return data ? JSON.parse(data) : null;
+    }
+
+    async set<T>(key: string, value: T, ttl: number = this.defaultTTL): Promise<void> {
+        await this.redis.set(key, JSON.stringify(value), 'EX', ttl);
+    }
+
+    async invalidate(pattern: string): Promise<void> {
+        const keys = await this.redis.keys(pattern);
+        if (keys.length > 0) {
+            await this.redis.del(...keys);
+        }
+    }
+}
+
+// Usage example
+const cache = new CacheManager('redis://localhost:6379');
+
+async function getCachedUserPosts(userId: string) {
+    const cacheKey = `user:${userId}:posts`;
+
+    // Try cache first
+    const cached = await cache.get(cacheKey);
+    if (cached) return cached;
+
+    // If not in cache, get from database
+    const posts = await getUserPosts(userId);
+
+    // Store in cache
+    await cache.set(cacheKey, posts);
+
+    return posts;
+}
+```
+
+## Data Partitioning
+
+```sql
+-- Create Partition Table
+CREATE TABLE events (
+    id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSONB,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL
+) PARTITION BY RANGE (created_at);
+
+-- Create Partitions
+CREATE TABLE events_2024_q1 PARTITION OF events
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE events_2024_q2 PARTITION OF events
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+-- Add Indexes to Parent Table
+CREATE INDEX idx_events_user_id ON events(user_id);
+CREATE INDEX idx_events_event_type ON events(event_type);
+CREATE INDEX idx_events_created_at ON events(created_at);
+```
+
+## Best Practices
+
+1. Schema Design
+    - Normalize appropriately
+    - Use appropriate data types
+    - Implement constraints
+    - Plan for scaling
+
+2. Performance
+    - Index strategically
+    - Optimize queries
+    - Use connection pooling
+    - Implement caching
+
+3. Data Integrity
+    - Use transactions
+    - Implement constraints
+    - Regular backups
+    - Data validation
+
+4. Security
+    - Access control
+    - Encryption at rest
+    - Secure connections
+    - Regular audits
+
+## Conclusion
+
+Good database design requires careful consideration of data structure, performance, and scalability. These patterns and practices help create robust and efficient database systems.
