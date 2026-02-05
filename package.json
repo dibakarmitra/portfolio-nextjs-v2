@@ -1,5 +1,14 @@
 {
-    "name": "admin-console",
+    "name": "portfolio-nextjs-v2",
+    "description": "A modern portfolio application with admin panel built with Next.js, TypeScript, Database, and Cloudflare R2 storage",
+    "keywords": [
+        "portfolio",
+        "nextjs",
+        "typescript",
+        "sqlite",
+        "cloudflare-r2",
+        "admin-panel"
+    ],
     "private": true,
     "version": "0.0.1",
     "type": "module",
