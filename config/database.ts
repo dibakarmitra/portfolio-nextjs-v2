@@ -2,17 +2,21 @@ import knex, { type Knex } from 'knex';
 import path from 'path';
 import { env } from './env';
 
-const dbPath = path.resolve(process.cwd(), env.SQLITE_FILENAME);
+const dbClient = env.DB_CLIENT || 'better-sqlite3';
+
+const dbPath = path.resolve(process.cwd(), env.DB_FILENAME);
 
 const config: Knex.Config = {
-    client: 'better-sqlite3',
-    connection: {
-        filename: dbPath,
-    },
+    client: dbClient,
+    connection: dbClient === 'postgresql'
+        ? env.DATABASE_URL
+        : {
+            filename: dbPath,
+        },
     useNullAsDefault: true,
     pool: {
-        min: 2,
-        max: 10,
+        min: dbClient === 'better-sqlite3' ? 1 : 2,
+        max: dbClient === 'better-sqlite3' ? 1 : 10,
         acquireTimeoutMillis: 30000,
         idleTimeoutMillis: 30000,
     },

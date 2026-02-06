@@ -1,10 +1,16 @@
 import type { Knex } from 'knex';
+import { env } from '@/config/env';
+
+const dbClient = env.DB_CLIENT || 'better-sqlite3';
+console.log(`Using ${dbClient} database client`);
 
 const knexConfig: Knex.Config = {
-    client: 'better-sqlite3',
-    connection: {
-        filename: './dev.sqlite3',
-    },
+    client: dbClient,
+    connection: dbClient === 'postgresql'
+        ? env.DATABASE_URL
+        : {
+            filename: env.DB_FILENAME || './dev.sqlite3',
+        },
     migrations: {
         directory: './database/migrations',
         extension: 'ts',
@@ -13,6 +19,15 @@ const knexConfig: Knex.Config = {
         directory: './database/seeds',
     },
     useNullAsDefault: true,
+    pool: dbClient === 'better-sqlite3'
+        ? {
+            min: 1,
+            max: 1,
+        }
+        : {
+            min: 2,
+            max: 10,
+        },
 };
 
 export default knexConfig;

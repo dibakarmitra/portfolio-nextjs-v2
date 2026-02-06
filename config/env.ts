@@ -4,11 +4,17 @@
 
 const getEnvVar = (key: string, defaultValue?: string): string => {
     const value = process.env[key];
-    if (!value && !defaultValue) {
+
+    if (value !== undefined) {
+        return value;
+    }
+
+    if (!defaultValue) {
         console.warn(`Environment variable ${key} is not set`);
         return '';
     }
-    return value || defaultValue || '';
+
+    return defaultValue;
 };
 
 const getEnvBool = (key: string, defaultValue: boolean = false): boolean => {
@@ -28,8 +34,9 @@ export const env = {
     APP_NAME: getEnvVar('APP_NAME', 'Portfolio Admin'),
     APP_URL: getEnvVar('APP_URL', 'http://localhost:3000'),
 
+    DB_CLIENT: getEnvVar('DB_CLIENT', 'better-sqlite3'),
     DATABASE_URL: getEnvVar('DATABASE_URL', 'dev.sqlite3'),
-    SQLITE_FILENAME: getEnvVar('SQLITE_FILENAME', 'dev.sqlite3'),
+    DB_FILENAME: getEnvVar('DB_FILENAME', 'dev.sqlite3'),
 
     AUTH_SECRET: getEnvVar('AUTH_SECRET') || getEnvVar('NEXTAUTH_SECRET'),
     AUTH_URL: getEnvVar('AUTH_URL') || getEnvVar('NEXTAUTH_URL', 'http://localhost:3000'),
