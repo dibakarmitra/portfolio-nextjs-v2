@@ -18,6 +18,7 @@ const knexConfig: Knex.Config = {
     },
     seeds: {
         directory: './database/seeds',
+        extension: 'ts',
     },
     useNullAsDefault: true,
     pool: dbClient === 'better-sqlite3'
