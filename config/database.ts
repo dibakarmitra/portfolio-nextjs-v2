@@ -8,7 +8,7 @@ const dbPath = path.resolve(process.cwd(), env.DB_FILENAME);
 
 const config: Knex.Config = {
     client: dbClient,
-    connection: dbClient === 'postgresql'
+    connection: dbClient === 'pg'
         ? env.DATABASE_URL
         : {
             filename: dbPath,

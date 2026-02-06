@@ -1,6 +1,9 @@
-/**
- * environment variables
- */
+import path from 'path';
+import { config } from 'dotenv';
+
+config({
+    path: path.join(process.cwd(), '.env.local'),
+});
 
 const getEnvVar = (key: string, defaultValue?: string): string => {
     const value = process.env[key];
