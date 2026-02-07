@@ -1,0 +1,16 @@
+{
+    "short_name": "Dibakar Portfolio",
+    "name": "Dibakar Mitra - Senior PHP Developer",
+    "icons": [
+        {
+            "src": "https://api.dicebear.com/7.x/avataaars/png?seed=Dibakar&backgroundColor=b6e3f4",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ],
+    "start_url": ".",
+    "display": "standalone",
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "description": "Portfolio of Dibakar Mitra, Senior PHP Developer."
+}
