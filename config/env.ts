@@ -1,9 +1,15 @@
 import path from 'path';
 import { config } from 'dotenv';
 
-config({
-    path: path.join(process.cwd(), '.env.local'),
-});
+if (process.env) {
+    try {
+        config({
+            path: path.join(process.cwd(), '.env.local'),
+        });
+    } catch (error) {
+        console.warn('Could not load .env file:', error);
+    }
+}
 
 const getEnvVar = (key: string, defaultValue?: string): string => {
     const value = process.env[key];

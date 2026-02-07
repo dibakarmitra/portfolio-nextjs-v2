@@ -1,7 +1,7 @@
-import { PROFILE } from '@/config/constants';
+import { env } from '@/config/env';
 
 export default function Loading() {
-    const initials = PROFILE.name
+    const initials = env.OWNER_NAME
         .split(' ')
         .map((n) => n[0])
         .join('')
