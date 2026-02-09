@@ -152,8 +152,8 @@ export function SettingsDisplay() {
 
             <div className="mt-6 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-xs text-blue-700 dark:text-blue-300">
-                    💡 This component updates automatically when settings change. Try changing
-                    settings in the Settings page to see the immediate effect!
+                    💡 This component updates automatically when settings change.
+                    Try changing settings in the Settings page to see the immediate effect!
                 </p>
             </div>
         </div>
