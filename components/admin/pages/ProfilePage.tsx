@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { Save, User, Globe, Github, Linkedin, Mail, Phone, Briefcase, Wand2 } from 'lucide-react';
+import { Save, User, Globe, Github, Linkedin, Mail, Phone, Briefcase, Wand2, Twitter } from 'lucide-react';
 import { UserProfile } from '@/types';
 import { FormField } from '@/components/admin/ui/FormField';
 import { ImageUpload } from '@/components/admin/ui/ImageUpload';
@@ -255,6 +255,16 @@ export const ProfilePage: React.FC<ProfilePageProps> = React.memo(
                                 onChange={(e) => handleSocialChange('linkedin', e.target.value)}
                                 className="flex-1 bg-transparent border-none py-2 text-sm text-zinc-900 dark:text-zinc-200 focus:outline-none"
                                 placeholder="LinkedIn profile"
+                            />
+                        </div>
+                        <div className="flex items-center bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 transition-colors">
+                            <Twitter size={14} className="text-zinc-400 mr-2" />
+                            <input
+                                type="text"
+                                value={socialLinks.x}
+                                onChange={(e) => handleSocialChange('x', e.target.value)}
+                                className="flex-1 bg-transparent border-none py-2 text-sm text-zinc-900 dark:text-zinc-200 focus:outline-none"
+                                placeholder="Twitter/X profile"
                             />
                         </div>
                         <div className="flex items-center bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-md px-3 transition-colors">

@@ -43,9 +43,9 @@ export const env = {
     APP_NAME: getEnvVar('APP_NAME', 'Portfolio Admin'),
     APP_URL: getEnvVar('APP_URL', 'http://localhost:3000'),
 
-    DB_CLIENT: getEnvVar('DB_CLIENT', 'better-sqlite3'),
-    DATABASE_URL: getEnvVar('DATABASE_URL', 'dev.sqlite3'),
-    DB_FILENAME: getEnvVar('DB_FILENAME', 'dev.sqlite3'),
+    DB_CLIENT: getEnvVar('DB_CLIENT', process.env.NODE_ENV === 'production' ? 'pg' : 'better-sqlite3'),
+    DATABASE_URL: getEnvVar('DATABASE_URL', process.env.NODE_ENV === 'production' ? '' : 'dev.sqlite3'),
+    DB_FILENAME: getEnvVar('DB_FILENAME', process.env.NODE_ENV === 'production' ? '' : 'dev.sqlite3'),
 
     AUTH_SECRET: getEnvVar('AUTH_SECRET') || getEnvVar('NEXTAUTH_SECRET'),
     AUTH_URL: getEnvVar('AUTH_URL') || getEnvVar('NEXTAUTH_URL', 'http://localhost:3000'),
