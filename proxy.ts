@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { auth } from '@/lib/auth';
+import { jwtVerify } from 'jose';
 
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
@@ -29,9 +29,25 @@ export async function proxy(req: NextRequest) {
         return NextResponse.next();
     }
 
-    const session = await auth();
+    // Read the NextAuth JWT cookie (name differs between HTTP and HTTPS)
+    const token =
+        req.cookies.get('authjs.session-token')?.value ??
+        req.cookies.get('__Secure-authjs.session-token')?.value;
 
-    if (!session) {
+    let isAuthenticated = false;
+
+    if (token && process.env.AUTH_SECRET) {
+        try {
+            const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
+            await jwtVerify(token, secret);
+            isAuthenticated = true;
+        } catch {
+            // token is invalid or expired
+            isAuthenticated = false;
+        }
+    }
+
+    if (!isAuthenticated) {
         if (pathname.startsWith('/api/')) {
             return NextResponse.json(
                 { success: false, error: 'Authentication required' },
